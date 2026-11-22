@@ -694,7 +694,18 @@
     $('#start').textContent = doneToday ? 'جلسة أخرى' : 'ابدأ الجلسة';
     $('#extra').hidden = !(st.lessonDay === t && nextLesson());
     const sg = $('#stamps'); sg.innerHTML = '';
-    for (let i = 27; i >= 0; i--) { const d = t - i, on = !!st.days[d]; sg.appendChild(h('span', { class: (on ? 'on' : '') + (i === 0 ? ' today' : ''), lang: on ? 'ja' : null, text: on ? '済' : new Date(d * 864e5).getUTCDate() })); }
+    const now = new Date(t * 864e5), y = now.getUTCFullYear(), mo = now.getUTCMonth();
+    const first = Math.floor(Date.UTC(y, mo, 1) / 864e5), nDays = new Date(Date.UTC(y, mo + 1, 0)).getUTCDate();
+    $('#cal-month').textContent = now.toLocaleDateString('ar-IQ-u-nu-latn', { month: 'long', year: 'numeric', timeZone: 'UTC' });
+    const nTrained = Object.keys(st.days).filter(d => d >= first && d < first + nDays).length;
+    $('#cal-count').textContent = nTrained ? 'تدرّبت ' + nTrained + (nTrained === 1 ? ' يوماً' : ' أيام') + ' هذا الشهر' : 'كل يوم تُتم فيه الجلسة يُختم بختم أحمر';
+    ['سبت', 'أحد', 'إثنين', 'ثلاثاء', 'أربعاء', 'خميس', 'جمعة'].forEach(n => sg.appendChild(h('span', { class: 'wd', text: n })));
+    const lead = (new Date(first * 864e5).getUTCDay() + 1) % 7;
+    for (let i = 0; i < lead; i++) sg.appendChild(h('span', { class: 'blank' }));
+    for (let k = 0; k < nDays; k++) {
+      const d = first + k, on = !!st.days[d];
+      sg.appendChild(h('span', { class: (on ? 'on' : '') + (d === t ? ' today' : '') + (d > t ? ' future' : ''), title: String(k + 1) }, on ? h('i', { lang: 'ja', text: '済' }) : null, h('small', { text: String(k + 1) })));
+    }
     $('#crest-sub').textContent = Object.keys(st.items).length ? 'كل حرف تجيب عنه صحيحاً يفتح زهرة. المس النافذة لتدخل الحديقة.' : 'شجرتك الآن في الشتاء. أول حرف تتقنه يوقظ أول زهرة.';
     renderStats();
     syncTree(instant); celebrate(instant);

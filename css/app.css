@@ -106,22 +106,18 @@ h1 { font-family: var(--f-display); font-weight: 700; font-size: 34px; line-heig
 .plan li.done span { text-decoration: line-through; text-decoration-color: var(--shu); color: var(--sumi-soft); }
 
 .record h3, .modes h3 { font-size: 15px; font-weight: 600; color: var(--sumi-soft); margin-bottom: 10px; }
-.stamps { display: grid; grid-template-columns: repeat(14, minmax(0, 1fr)); gap: 6px; max-width: 760px; }
-.stamps span { aspect-ratio: 1; border: 1px solid var(--line); border-radius: 3px; display: grid; place-items: center; font-size: 11px; color: rgba(28, 25, 23, .38); font-variant-numeric: tabular-nums; line-height: 1; }
-.stamps span.on { border-color: transparent; background: var(--shu); color: #fff8ee; font-family: var(--f-jp); font-size: 14px; border-radius: 4px 6px 3px 7px; transform: rotate(-4deg); box-shadow: inset 0 0 0 1.5px rgba(255, 255, 255, .22); }
-.stamps span.today { outline: 2px solid var(--ai); outline-offset: 1px; }
-@media (max-width: 759px) {
-  .hero { gap: 18px; }
-  .window-col { display: grid; grid-template-columns: auto 1fr; gap: 6px 16px; align-items: center; text-align: right; }
-  .marumado { width: clamp(112px, 34vw, 170px); border-width: 8px; grid-row: span 2; }
-  .window-cap { align-self: end; max-width: none; font-size: 14px; }
-  .treestat { justify-content: flex-start; align-self: start; font-size: 13px; }
-  .kk-body { padding: 16px 18px 18px; gap: 10px; }
-  .kk-body h2 { font-size: 28px; }
-  .plan li { padding: 6px 0; }
-}
-@media (max-width: 560px) { .stamps { grid-template-columns: repeat(7, minmax(0, 1fr)); max-width: 340px; } }
-
+.cal-head { display: flex; align-items: baseline; justify-content: space-between; gap: 4px 16px; flex-wrap: wrap; margin-bottom: 10px; max-width: 560px; }
+.cal-head h3 { margin: 0 !important; color: var(--sumi) !important; font-size: 17px !important; }
+.cal-head p { color: var(--sumi-soft); font-size: 13.5px; }
+.stamps { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px; max-width: 560px; }
+.stamps span { aspect-ratio: 1; border: 1px solid var(--line); border-radius: 4px; position: relative; display: grid; place-items: center; background: rgba(255, 253, 246, .5); }
+.stamps span small { position: absolute; top: 3px; right: 5px; font-size: 11px; line-height: 1; color: var(--sumi-soft); font-variant-numeric: tabular-nums; }
+.stamps span.wd { aspect-ratio: auto; border: 0; background: none; font-size: 11.5px; color: var(--sumi-soft); padding-bottom: 2px; }
+.stamps span.blank { border: 0; background: none; }
+.stamps span.future { opacity: .45; }
+.stamps span.on i { font-style: normal; font-family: var(--f-jp); font-size: clamp(15px, 4.2vw, 24px); color: #fff8ee; background: var(--shu); width: 72%; aspect-ratio: 1; display: grid; place-items: center; border-radius: 4px 7px 3px 8px; transform: rotate(-6deg); box-shadow: inset 0 0 0 1.5px rgba(255, 255, 255, .22); line-height: 1; }
+.stamps span.on small { color: var(--sumi); font-weight: 600; z-index: 1; }
+.stamps span.today { border: 2px solid var(--ai); }
 @media (min-width: 760px) {
   .page { padding: 30px 36px 36px; gap: 28px; }
   h1 { font-size: 40px; }

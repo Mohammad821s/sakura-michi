@@ -1,7 +1,7 @@
 /* درب الساكورا — منطق البرنامج */
 (function () {
   'use strict';
-  const APP_VERSION = '2026.11.23-4';
+  const APP_VERSION = '2026.11.23-5';
   const D = window.DATA, STROKES = window.STROKES || {}, Garden = window.Garden || {};
   const $ = (s, r) => (r || document).querySelector(s);
   const NS = 'http://www.w3.org/2000/svg';
@@ -68,10 +68,12 @@
 
   /* ================= الحالة والحفظ ================= */
   const LSKEY = 'sakura-michi-v1';
-  const defaults = () => ({ v: 1, ts: 0, items: {}, w: {}, days: {}, streak: 0, last: 0, lessons: 0, lessonDay: 0, shadow: 0, chunk: 0, set: { engine: 'auto', rate: 1, sfx: true, per: 5 } });
+  const defaults = () => ({ v: 1, ts: 0, items: {}, w: {}, days: {}, streak: 0, last: 0, lessons: 0, lessonDay: 0, shadow: 0, chunk: 0, set: { engine: 'auto', rate: 1, sfx: true, per: 5 }, epoch: 2, pend: null, resume: null });
   let st = defaults();
   function adopt(o) { const d = defaults(); if (!o || typeof o !== 'object') return d; Object.assign(d, o); d.set = Object.assign(defaults().set, o.set || {}); return d; }
   try { const raw = localStorage.getItem(LSKEY); if (raw) st = adopt(JSON.parse(raw)); } catch (e) { }
+  const EPOCH = 2; /* رفع هذا الرقم يمسح التقدم مرة واحدة عند الفتح التالي */
+  if ((st.epoch || 0) < EPOCH) { const keep = st.set; st = defaults(); st.set = keep; st.epoch = EPOCH; try { localStorage.setItem(LSKEY, JSON.stringify(st)); } catch (e) { } }
   let cloud = null, cloudBusy = false, cloudDirty = false, cloudTimer = 0;
   function touch() {
     st.ts = Date.now();
@@ -112,7 +114,17 @@
   const readable = w => w.t.every(learned);
   function syncTree(instant) { if (!Garden.ok) return; const L = {}; for (const id in ITEMS) L[id] = levelOf(id); Garden.setLevels(L, instant); }
 
+  function packLesson(L) { return { key: L.stage.key, items: L.items, first: L.first, unlocked: L.unlocked.map(w => w.k) }; }
+  function unpackLesson(p) {
+    const stage = STAGES.find(x => x.key === p.key); if (!stage || !p.items || !p.items.length) return null;
+    return { stage, items: p.items, first: p.first, unlocked: (p.unlocked || []).map(k => BYK[k]).filter(Boolean) };
+  }
   function nextLesson() {
+    if (st.pend) { const L = unpackLesson(st.pend); if (L) return L; }
+    const L = freshLesson(); if (L) { st.pend = packLesson(L); touch(); }
+    return L;
+  }
+  function freshLesson() {
     const stage = STAGES.find(s => s.items.some(id => !learned(id)));
     if (!stage) return null;
     let rem = stage.items.filter(id => !learned(id));
@@ -588,36 +600,57 @@
     $('#sheet-title').textContent = title; if (!session) { $('#inkbar').innerHTML = ''; $('#lab').textContent = ''; }
   }
   function goHome() { showScreen(tab === 'practice' ? 'practice' : 'home'); }
-  function startRun(sections, title, daily) {
-    run = { sections, si: 0, ci: 0, daily }; openSheet(title, true);
+  function startRun(sections, title, daily, at) {
+    sections.forEach(x => { if (!x.cards) x.cards = x.build(); });
+    run = { sections, si: 0, ci: 0, daily, title }; openSheet(title, true);
     const bar = $('#inkbar'); bar.innerHTML = '';
-    sections.forEach(s => { s.seg = h('div', { class: 'seg', title: s.name }, h('b')); bar.appendChild(s.seg); });
+    sections.forEach(x => { x.seg = h('div', { class: 'seg', title: x.name }, h('b')); bar.appendChild(x.seg); });
     run.lab = $('#lab');
+    if (at && at.si < sections.length) { run.si = at.si; run.ci = Math.min(at.ci, Math.max(0, sections[at.si].cards.length - 1)); for (let i = 0; i < run.si; i++) sections[i].fired = true; }
     step();
   }
   function openCards(cards, title) { startRun([{ name: title, cards }], title, false); }
+  function saveSpot() {
+    if (!run || !run.daily) return;
+    if (run.si >= run.sections.length) st.resume = null;
+    else st.resume = { day: today(), si: run.si, ci: run.ci, lesson: dailyLesson };
+    touch();
+  }
   function step() {
     while (run.si < run.sections.length) {
-      const s = run.sections[run.si];
-      if (!s.cards) s.cards = s.build();
-      if (run.ci < s.cards.length) break;
-      if (s.onDone && s.cards.length) s.onDone();
-      s.seg.firstChild.style.transform = 'scaleX(1)'; run.si++; run.ci = 0;
+      const x = run.sections[run.si];
+      if (run.ci < x.cards.length) break;
+      if (x.onDone && x.cards.length && !x.fired) { x.fired = true; x.onDone(); }
+      run.si++; run.ci = 0;
     }
-    run.sections.forEach((s, i) => s.seg.classList.toggle('cur', i === run.si));
+    paintBar(); saveSpot();
+    $('#back').disabled = run.si === 0 && run.ci === 0;
     if (run.si >= run.sections.length) {
       if (run.daily) { const t = today(); if (st.last !== t) { st.streak = st.last === t - 1 ? st.streak + 1 : 1; st.last = t; } st.days[t] = 1; touch(); }
       run.lab.textContent = ''; return R.finish({ daily: run.daily });
     }
-    const s = run.sections[run.si], c = s.cards[run.ci];
-    s.seg.firstChild.style.transform = 'scaleX(' + (run.ci / s.cards.length) + ')';
-    run.lab.textContent = s.name + ' ' + (run.ci + 1) + '/' + s.cards.length;
+    const x = run.sections[run.si], c = x.cards[run.ci];
+    run.lab.textContent = x.name + ' ' + (run.ci + 1) + '/' + x.cards.length;
+    try { speechSynthesis.cancel(); } catch (e) { }
     R[c.t](c);
+  }
+  function paintBar() {
+    run.sections.forEach((x, i) => {
+      x.seg.classList.toggle('cur', i === run.si);
+      x.seg.firstChild.style.transform = 'scaleX(' + (i < run.si ? 1 : i > run.si ? 0 : run.ci / Math.max(1, x.cards.length)) + ')';
+    });
+  }
+  function goBack() {
+    if (!run) return;
+    let si = Math.min(run.si, run.sections.length), ci = run.ci - 1;
+    if (si >= run.sections.length) { si = run.sections.length; ci = -1; }
+    while (ci < 0) { si--; if (si < 0) return; ci = run.sections[si].cards.length - 1; }
+    run.si = si; run.ci = ci; step();
   }
   function done(result) {
     if (!run) return goHome();
-    const s = run.sections[run.si], c = s.cards[run.ci];
-    if (result === false && !c.again && ['pick', 'recall', 'meaning', 'readWord'].includes(c.t)) s.cards.push(Object.assign({}, c, { again: true }));
+    const x = run.sections[run.si], c = x.cards[run.ci];
+    if (result === false && !c.again && !c.requeued && ['pick', 'recall', 'meaning', 'readWord'].includes(c.t)) { c.requeued = true; x.cards.push(Object.assign({}, c, { again: true })); }
     run.ci++; step();
   }
 
@@ -667,10 +700,12 @@
     cs.push({ t: 'chunk', c }); c.ex.forEach(e => cs.push({ t: 'say', w: e }));
     return cs;
   }
-  function daily(extraLesson) {
-    const L = (st.lessonDay !== today() || extraLesson) ? nextLesson() : null, secs = [];
+  let dailyLesson = null;
+  function daily(extraLesson, forced) {
+    const L = forced !== undefined ? forced : (st.lessonDay !== today() || extraLesson) ? nextLesson() : null, secs = [];
+    if (!extraLesson) dailyLesson = L ? packLesson(L) : null;
     if (!extraLesson) secs.push({ name: 'مراجعة', build: reviewCards });
-    if (L) secs.push({ name: 'حروف جديدة', build: () => lessonCards(L), onDone: () => { st.lessons++; st.lessonDay = today(); touch(); } });
+    if (L) secs.push({ name: 'حروف جديدة', build: () => lessonCards(L), onDone: () => { st.lessons++; st.lessonDay = today(); st.pend = null; touch(); } });
     if (!extraLesson) {
       secs.push({ name: 'قراءة', build: () => readCards(6) });
       secs.push({ name: 'كلمات', build: () => vocabCards(4) });
@@ -692,7 +727,7 @@
     li('三', 'قراءة', 'كلمات وجمل بحروفك');
     li('四', 'كلمات جديدة', '4 كلمات');
     li('五', 'كلام', 'ترديد وعبارات');
-    $('#start').textContent = doneToday ? 'جلسة أخرى' : 'ابدأ الجلسة';
+    $('#start').textContent = st.resume && st.resume.day === t ? 'أكمل من حيث توقفت' : doneToday ? 'جلسة أخرى' : 'ابدأ الجلسة';
     $('#extra').hidden = !(st.lessonDay === t && nextLesson());
     const sg = $('#stamps'); sg.innerHTML = '';
     const now = new Date(t * 864e5), y = now.getUTCFullYear(), mo = now.getUTCMonth();
@@ -772,13 +807,33 @@
       btn('اختبرني بالسماع', () => openCards(pickN(mine, 10).map(w => ({ t: 'meaning', w, hear: true })), 'الكلمات'), 'btn-ink small'),
       btn('علّمني كلمات جديدة', () => { const cs = vocabCards(5); cs.length ? openCards(cs, 'الكلمات') : toast('تعلمت كل الكلمات المتاحة.'); }, 'btn-ink small')), list);
   }
+  function backupSave() {
+    try {
+      const d = new Date(), name = 'sakura-michi-' + d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0') + '.json';
+      const blob = new Blob([JSON.stringify({ app: 'sakura-michi', saved: d.toISOString(), data: st }, null, 1)], { type: 'application/json' });
+      const a = h('a', { href: URL.createObjectURL(blob), download: name }); document.body.appendChild(a); a.click(); a.remove();
+      st.lastBackup = Date.now(); touch(); toast('حُفظت النسخة في مجلد التنزيلات: ' + name);
+    } catch (e) { toast('تعذّر حفظ الملف في هذا المتصفح.'); }
+  }
+  function backupLoad(file) {
+    const r = new FileReader();
+    r.onload = () => {
+      try {
+        const o = JSON.parse(r.result), data = o && o.app === 'sakura-michi' ? o.data : o;
+        if (!data || typeof data !== 'object' || !data.items) throw 0;
+        const keepEpoch = EPOCH; st = adopt(data); st.epoch = keepEpoch; st.resume = null; touch(); bloomed = null; syncTree(true);
+        toast('استُرجع تقدمك: ' + Object.keys(st.items).length + ' حرفاً.'); showScreen('home');
+      } catch (e) { toast('هذا الملف ليس نسخة احتياطية من درب الساكورا.'); }
+    };
+    r.readAsText(file);
+  }
   function viewSettings() {
     openSheet('الإعدادات', false);
     const eng = Voice.engine();
     const seg = (opts, cur, fn) => { const r = h('div', { class: 'btn-row' }); opts.forEach(o => r.appendChild(btn(o[1], () => { fn(o[0]); touch(); viewSettings(); }, 'btn-ink small' + (o[0] === cur ? ' on' : '')))); return r; };
     const rate = h('input', { type: 'range', id: 'set-rate', min: '.6', max: '1.3', step: '.05', value: st.set.rate });
     rate.addEventListener('change', () => { st.set.rate = +rate.value; touch(); Voice.speak('こんにちは'); });
-    const reset = h('div', { class: 'btn-row' }); const askReset = () => { reset.innerHTML = ''; reset.append(h('span', { text: 'سيُمحى كل تقدمك. متأكد؟' }), btn('نعم، امسح', () => { const s = st.set; st = defaults(); st.set = s; touch(); toast('مُسح التقدم.'); bloomed = null; showScreen('home'); }, 'btn-ink small'), btn('إلغاء', viewSettings, 'btn-ink small')); };
+    const reset = h('div', { class: 'btn-row' }); const askReset = () => { reset.innerHTML = ''; reset.append(h('span', { text: 'سيُمحى كل تقدمك. متأكد؟' }), btn('نعم، امسح', () => { const s = st.set; st = defaults(); st.set = s; touch(); try { speechSynthesis.cancel(); } catch (e) { } toast('مُسح التقدم.'); bloomed = null; showScreen('home'); }, 'btn-ink small'), btn('إلغاء', viewSettings, 'btn-ink small')); };
     reset.appendChild(btn('امسح التقدم وابدأ من جديد', askReset, 'btn-ink small'));
     card(
       h('div', { class: 'setrow' }, h('div', null, h('b', { text: 'صوت النطق' }), h('p', { text: eng === 'browser' ? 'يُستخدم الآن صوت الجهاز الياباني' + (Voice.ja.length ? ' (' + Voice.ja.length + ')' : '') : eng === 'claude' ? 'يُستخدم الآن صوت Claude' : 'لا يوجد صوت متاح في هذه الصفحة' })),
@@ -789,6 +844,8 @@
       h('div', { class: 'setrow' }, h('div', null, h('b', { text: 'أصوات الكوتو والجرس' })), seg([[true, 'تعمل'], [false, 'صامتة']], st.set.sfx, v => { st.set.sfx = v; })),
       h('div', { class: 'setrow' }, h('div', null, h('b', { text: 'الميكروفون' }), h('p', { text: Mic.ready() ? 'متاح: سيقارن البرنامج نطقك بالنص' : (navigator.brave ? 'متصفح Brave لا يدعم تمييز الكلام. تسجيل صوتك يعمل، ولتمييز النطق افتح الصفحة في Chrome.' : 'غير متاح هنا. افتح الصفحة في Chrome لتفعيله، وإلا قيّم نطقك بنفسك.') }))),
       h('div', { class: 'setrow' }, h('div', null, h('b', { text: 'الحفظ' }), h('p', { text: cloud ? 'تقدمك محفوظ في حسابك ويظهر على أي جهاز' : 'تقدمك محفوظ في هذا المتصفح على هذا الجهاز. لا تمسح بيانات Chrome.' }))),
+      h('div', { class: 'setrow' }, h('div', null, h('b', { text: 'نسخة احتياطية' }), h('p', { text: 'احفظ تقدمك في ملف على جهازك، واسترجعه في أي وقت أو على جهاز آخر.' })),
+        h('div', { class: 'btn-row' }, btn('حفظ نسخة', backupSave, 'btn-ink small'), btn('استرجاع من ملف', () => $('#restore-file').click(), 'btn-ink small'))),
       h('div', { class: 'setrow' }, reset),
       h('p', { class: 'sub', text: 'النسخة: ' + APP_VERSION }),
       h('p', { class: 'sub', text: 'بيانات ترتيب الضربات من مشروع KanjiVG (Ulrich Apel)، رخصة CC BY-SA 3.0.' }));
@@ -809,7 +866,11 @@
     washi(); Voice.init(); Mic.init();
     try { if (Garden.init && Garden.init($('#garden'), { hira: ORDER.h, kata: ORDER.k })) { Garden.onPick = p => { if (tab === 'garden') showPick(p); }; } } catch (e) { console.error(e); }
     showScreen('home'); syncTree(true);
-    $('#start').addEventListener('click', () => { Sfx.bell(); startRun(daily(false), 'جلسة اليوم', true); });
+    $('#start').addEventListener('click', () => {
+      Sfx.bell(); const r = st.resume && st.resume.day === today() ? st.resume : null;
+      startRun(r ? daily(false, r.lesson ? unpackLesson(r.lesson) : null) : daily(false), 'جلسة اليوم', true, r);
+    });
+    $('#back').addEventListener('click', goBack);
     $('#extra').addEventListener('click', () => { const s = daily(true); if (s.length) startRun(s, 'درس إضافي', false); });
     $('#close').addEventListener('click', goHome);
     $('#window').addEventListener('click', () => showScreen('garden'));
@@ -822,6 +883,7 @@
       const on = Garden.preview(!e.currentTarget.classList.contains('on')); e.currentTarget.classList.toggle('on', on);
       e.currentTarget.textContent = on ? 'أعد شجرتي كما هي' : 'أرني الشجرة مزهرة'; if (on) Sfx.chord();
     });
+    $('#restore-file').addEventListener('change', e => { const f = e.target.files[0]; if (f) backupLoad(f); e.target.value = ''; });
     initCloud();
     if ('serviceWorker' in navigator && location.protocol === 'https:' && !(window.claude && window.claude.use)) {
       let reloaded = false;

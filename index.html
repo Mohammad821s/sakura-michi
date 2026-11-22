@@ -10,7 +10,7 @@
 <link rel="icon" href="icon-192.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Aref+Ruqaa:wght@400;700&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=Klee+One:wght@400;600&family=Yuji+Syuku&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/app.css?v=1795389467">
+<link rel="stylesheet" href="css/app.css?v=1795390611">
 </head>
 <body>
 
@@ -27,31 +27,35 @@
       <div class="streak" id="streak"><b>0</b><span>يوم<br>متتالٍ</span></div>
     </header>
 
-    <div class="hero">
-      <div class="window-col">
-        <div class="marumado" id="window" role="button" tabindex="0" aria-label="افتح الحديقة">
-          <div id="garden" aria-hidden="true"></div>
+    <div class="dash">
+      <div class="col-main">
+        <div class="kakejiku">
+          <div class="rod"></div>
+          <div class="kk-body">
+            <h2>جلسة اليوم</h2>
+            <ol class="plan" id="plan"></ol>
+            <button class="btn-shu wide" id="start" type="button">ابدأ الجلسة</button>
+            <button class="btn-ink wide" id="extra" type="button" hidden>درس جديد إضافي</button>
+          </div>
+          <div class="rod"></div>
         </div>
-        <p class="window-cap" id="crest-sub"></p>
-        <div class="treestat"></div>
       </div>
-
-      <div class="kakejiku">
-        <div class="rod"></div>
-        <div class="kk-body">
-          <h2>جلسة اليوم</h2>
-          <ol class="plan" id="plan"></ol>
-          <button class="btn-shu wide" id="start" type="button">ابدأ الجلسة</button>
-          <button class="btn-ink wide" id="extra" type="button" hidden>درس جديد إضافي</button>
+      <div class="col-side">
+        <div class="panel window-col">
+          <div class="marumado" id="window" role="button" tabindex="0" aria-label="افتح الحديقة">
+            <div id="garden" aria-hidden="true"></div>
+          </div>
+          <div class="win-text">
+            <p class="window-cap" id="crest-sub"></p>
+            <div class="treestat"></div>
+          </div>
         </div>
-        <div class="rod"></div>
+        <section class="panel record">
+          <div class="cal-head"><h3>أيام التدريب · <span id="cal-month"></span></h3><p id="cal-count"></p></div>
+          <div class="stamps" id="stamps"></div>
+        </section>
       </div>
     </div>
-
-    <section class="record">
-      <div class="cal-head"><h3>أيام التدريب · <span id="cal-month"></span></h3><p id="cal-count"></p></div>
-      <div class="stamps" id="stamps"></div>
-    </section>
   </div>
 </section>
 
@@ -77,7 +81,7 @@
 
 <section id="sheet" hidden>
   <header class="sheet-head">
-    <button type="button" class="btn-ink small" id="close">خروج</button>
+    <div class="head-btns"><button type="button" class="btn-ink small" id="close">خروج</button><button type="button" class="btn-ink small" id="back" aria-label="البطاقة السابقة">→ رجوع</button></div>
     <div class="sheet-title" id="sheet-title"></div>
     <span class="lab" id="lab"></span>
     <div class="inkbar" id="inkbar"></div>
@@ -94,11 +98,12 @@
 </nav>
 
 <div id="toast" role="status"></div>
+<input type="file" id="restore-file" accept=".json,application/json" hidden>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-<script src="js/strokes.js?v=1795389467"></script>
-<script src="js/data.js?v=1795389467"></script>
-<script src="js/tree.js?v=1795389467"></script>
-<script src="js/app.js?v=1795389467"></script>
+<script src="js/strokes.js?v=1795390611"></script>
+<script src="js/data.js?v=1795390611"></script>
+<script src="js/tree.js?v=1795390611"></script>
+<script src="js/app.js?v=1795390611"></script>
 </body>
 </html>

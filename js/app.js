@@ -403,13 +403,14 @@
       const mode = phases[pi]; box.innerHTML = ''; ctrl.innerHTML = ''; fb.textContent = ''; fb.className = 'fb';
       [...ph.children].forEach((s, i) => s.classList.toggle('on', i === pi));
       if (mode === 'watch') {
-        ask.textContent = 'شاهد ترتيب الضربات';
+        ask.textContent = 'شاهد فقط: هكذا يُرسم الحرف';
+        fb.textContent = 'بعد المشاهدة اضغط «أكتب بنفسي» لتكتبه أنت بالقلم'; fb.className = 'fb';
         const svg = strokeSVG(id, '', true); box.appendChild(svg); requestAnimationFrame(() => animate(svg));
-        ctrl.append(spkBtn(() => sayItem(id)), btn('أعد', () => animate(svg)), btn('دوري الآن', nextPhase, 'btn-shu'));
+        ctrl.append(spkBtn(() => sayItem(id)), btn('أعد العرض', () => animate(svg)), btn('أكتب بنفسي', nextPhase, 'btn-shu'));
         return;
       }
       const trace = mode === 'trace';
-      ask.textContent = trace ? 'اكتب فوق الحرف الباهت بالترتيب' : 'اكتب الحرف الذي تسمعه';
+      ask.textContent = trace ? 'دورك: اكتب بالقلم فوق الحرف الباهت، الضربة 1 أولاً' : 'دورك: اكتب الحرف الذي تسمعه من ذاكرتك';
       if (trace) box.appendChild(strokeSVG(id, 'ghost', true));
       const hintSvg = strokeSVG(id, 'hint'); hintSvg.querySelectorAll('path').forEach(p => { p.style.opacity = 0; }); box.appendChild(hintSvg);
       const cv = h('canvas'); box.appendChild(cv);

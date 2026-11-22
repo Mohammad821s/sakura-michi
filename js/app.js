@@ -1,6 +1,7 @@
 /* درب الساكورا — منطق البرنامج */
 (function () {
   'use strict';
+  const APP_VERSION = '2026.11.23-4';
   const D = window.DATA, STROKES = window.STROKES || {}, Garden = window.Garden || {};
   const $ = (s, r) => (r || document).querySelector(s);
   const NS = 'http://www.w3.org/2000/svg';
@@ -789,6 +790,7 @@
       h('div', { class: 'setrow' }, h('div', null, h('b', { text: 'الميكروفون' }), h('p', { text: Mic.ready() ? 'متاح: سيقارن البرنامج نطقك بالنص' : (navigator.brave ? 'متصفح Brave لا يدعم تمييز الكلام. تسجيل صوتك يعمل، ولتمييز النطق افتح الصفحة في Chrome.' : 'غير متاح هنا. افتح الصفحة في Chrome لتفعيله، وإلا قيّم نطقك بنفسك.') }))),
       h('div', { class: 'setrow' }, h('div', null, h('b', { text: 'الحفظ' }), h('p', { text: cloud ? 'تقدمك محفوظ في حسابك ويظهر على أي جهاز' : 'تقدمك محفوظ في هذا المتصفح على هذا الجهاز. لا تمسح بيانات Chrome.' }))),
       h('div', { class: 'setrow' }, reset),
+      h('p', { class: 'sub', text: 'النسخة: ' + APP_VERSION }),
       h('p', { class: 'sub', text: 'بيانات ترتيب الضربات من مشروع KanjiVG (Ulrich Apel)، رخصة CC BY-SA 3.0.' }));
   }
 
@@ -821,6 +823,11 @@
       e.currentTarget.textContent = on ? 'أعد شجرتي كما هي' : 'أرني الشجرة مزهرة'; if (on) Sfx.chord();
     });
     initCloud();
+    if ('serviceWorker' in navigator && location.protocol === 'https:' && !(window.claude && window.claude.use)) {
+      let reloaded = false;
+      navigator.serviceWorker.addEventListener('controllerchange', () => { if (reloaded || run) return; reloaded = true; location.reload(); });
+      navigator.serviceWorker.register('sw.js').then(r => { try { r.update(); } catch (e) { } }).catch(() => { });
+    }
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
 })();

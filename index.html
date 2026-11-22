@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>درب الساكورا</title>
+<meta name="theme-color" content="#1c1917">
+<meta name="mobile-web-app-capable" content="yes">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Aref+Ruqaa:wght@400;700&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=Klee+One:wght@400;600&family=Yuji+Syuku&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+
+<section id="home" class="screen">
+  <div class="page">
+    <header class="top">
+      <div class="brand">
+        <span class="tate" lang="ja" dir="ltr">桜の道</span>
+        <div>
+          <h1>درب الساكورا</h1>
+          <p id="kk-date"></p>
+        </div>
+      </div>
+      <div class="streak" id="streak"><b>0</b><span>يوم<br>متتالٍ</span></div>
+    </header>
+
+    <div class="hero">
+      <div class="window-col">
+        <div class="marumado" id="window" role="button" tabindex="0" aria-label="افتح الحديقة">
+          <div id="garden" aria-hidden="true"></div>
+        </div>
+        <p class="window-cap" id="crest-sub"></p>
+        <div class="treestat"></div>
+      </div>
+
+      <div class="kakejiku">
+        <div class="rod"></div>
+        <div class="kk-body">
+          <h2>جلسة اليوم</h2>
+          <ol class="plan" id="plan"></ol>
+          <button class="btn-shu wide" id="start" type="button">ابدأ الجلسة</button>
+          <button class="btn-ink wide" id="extra" type="button" hidden>درس جديد إضافي</button>
+        </div>
+        <div class="rod"></div>
+      </div>
+    </div>
+
+    <section class="record">
+      <h3>سجل الأختام</h3>
+      <div class="stamps" id="stamps"></div>
+    </section>
+  </div>
+</section>
+
+<section id="scr-practice" class="screen" hidden>
+  <div class="page">
+    <header class="top plain"><h1>تدريب حر</h1><p>اختر ما تريد أن تتمرن عليه خارج جلسة اليوم</p></header>
+    <div class="modes" id="modes"></div>
+  </div>
+</section>
+
+<section id="scr-garden" class="screen" hidden>
+  <header class="g-head">
+    <h1>الحديقة</h1>
+    <div class="treestat"></div>
+  </header>
+  <div class="g-view" id="garden-full"></div>
+  <footer class="g-foot">
+    <p>اسحب للتدوير، قرّب بإصبعين، والمس غصناً لترى حرفه.</p>
+    <button type="button" class="btn-ink" id="preview">أرني الشجرة مزهرة</button>
+  </footer>
+  <div class="pickcard" id="pickcard" hidden></div>
+</section>
+
+<section id="sheet" hidden>
+  <header class="sheet-head">
+    <button type="button" class="btn-ink small" id="close">خروج</button>
+    <div class="sheet-title" id="sheet-title"></div>
+    <span class="lab" id="lab"></span>
+    <div class="inkbar" id="inkbar"></div>
+  </header>
+  <main id="stage"></main>
+</section>
+
+<nav class="nav" id="nav">
+  <button type="button" data-tab="home"><i lang="ja">今</i><span>اليوم</span></button>
+  <button type="button" data-tab="chart"><i lang="ja">あ</i><span>الحروف</span></button>
+  <button type="button" data-tab="practice"><i lang="ja">練</i><span>تدريب</span></button>
+  <button type="button" data-tab="garden"><i lang="ja">桜</i><span>الحديقة</span></button>
+  <button type="button" data-tab="settings"><i lang="ja">設</i><span>الإعدادات</span></button>
+</nav>
+
+<div id="toast" role="status"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="js/strokes.js"></script>
+<script src="js/data.js"></script>
+<script src="js/tree.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>

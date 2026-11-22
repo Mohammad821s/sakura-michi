@@ -202,7 +202,7 @@
     d: null, off: false, text: '', onText: null, onState: null,
     init() {
       const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-      if (SR && !(window.claude && window.claude.use)) { Mic.d = webSR(SR); return; }
+      if (SR && !navigator.brave && !(window.claude && window.claude.use)) { Mic.d = webSR(SR); return; }
       if (!window.claude || !window.claude.use) return;
       window.claude.use('dictation').then(d => {
         if (!d) return; Mic.d = d;
@@ -231,7 +231,7 @@
               }
               if (par) par({ text: interim });
             };
-            r.onerror = e => { const c = e.error === 'not-allowed' || e.error === 'service-not-allowed' ? 'not_granted' : e.error === 'no-speech' ? 'stopped' : 'upstream_error'; rej({ code: c }); };
+            r.onerror = e => { const c = e.error === 'not-allowed' || e.error === 'service-not-allowed' ? 'not_granted' : e.error === 'network' ? 'unavailable' : e.error === 'no-speech' ? 'stopped' : 'upstream_error'; rej({ code: c }); };
             r.onend = () => { set('idle', 'stopped'); if (ended) { ended(); ended = null; } r = null; };
             set('starting'); r.start();
           } catch (e) { rej({ code: 'unavailable' }); }
@@ -774,7 +774,7 @@
       h('div', { class: 'setrow' }, h('div', null, h('b', { text: 'اختبار الصوت' }), h('p', { text: 'يجب أن تسمع: كونّيتشيوا' })), spkBtn(() => Voice.speak('こんにちは'))),
       h('div', { class: 'setrow' }, h('div', null, h('b', { text: 'عدد الحروف الجديدة يومياً' }), h('p', { text: 'خمسة حروف تناسب نصف ساعة' })), seg([[3, '3'], [5, '5'], [7, '7']], st.set.per, v => { st.set.per = v; })),
       h('div', { class: 'setrow' }, h('div', null, h('b', { text: 'أصوات الكوتو والجرس' })), seg([[true, 'تعمل'], [false, 'صامتة']], st.set.sfx, v => { st.set.sfx = v; })),
-      h('div', { class: 'setrow' }, h('div', null, h('b', { text: 'الميكروفون' }), h('p', { text: Mic.ready() ? 'متاح: سيقارن البرنامج نطقك بالنص' : 'غير متاح هنا. افتح الصفحة في Chrome لتفعيله، وإلا قيّم نطقك بنفسك.' }))),
+      h('div', { class: 'setrow' }, h('div', null, h('b', { text: 'الميكروفون' }), h('p', { text: Mic.ready() ? 'متاح: سيقارن البرنامج نطقك بالنص' : (navigator.brave ? 'متصفح Brave لا يدعم تمييز الكلام. تسجيل صوتك يعمل، ولتمييز النطق افتح الصفحة في Chrome.' : 'غير متاح هنا. افتح الصفحة في Chrome لتفعيله، وإلا قيّم نطقك بنفسك.') }))),
       h('div', { class: 'setrow' }, h('div', null, h('b', { text: 'الحفظ' }), h('p', { text: cloud ? 'تقدمك محفوظ في حسابك ويظهر على أي جهاز' : 'تقدمك محفوظ في هذا المتصفح على هذا الجهاز. لا تمسح بيانات Chrome.' }))),
       h('div', { class: 'setrow' }, reset),
       h('p', { class: 'sub', text: 'بيانات ترتيب الضربات من مشروع KanjiVG (Ulrich Apel)، رخصة CC BY-SA 3.0.' }));

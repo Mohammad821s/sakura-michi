@@ -1,7 +1,7 @@
 /* درب الساكورا — منطق البرنامج */
 (function () {
   'use strict';
-  const APP_VERSION = '2026.11.23-6';
+  const APP_VERSION = '2026.11.23-7';
   const D = window.DATA, STROKES = window.STROKES || {}, Garden = window.Garden || {};
   const $ = (s, r) => (r || document).querySelector(s);
   const NS = 'http://www.w3.org/2000/svg';

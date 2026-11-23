@@ -1,7 +1,7 @@
 /* درب الساكورا — منطق البرنامج */
 (function () {
   'use strict';
-  const APP_VERSION = '2026.11.23-5';
+  const APP_VERSION = '2026.11.23-6';
   const D = window.DATA, STROKES = window.STROKES || {}, Garden = window.Garden || {};
   const $ = (s, r) => (r || document).querySelector(s);
   const NS = 'http://www.w3.org/2000/svg';
@@ -129,7 +129,7 @@
     if (!stage) return null;
     let rem = stage.items.filter(id => !learned(id));
     const first = rem.length === stage.items.length;
-    const per = stage.key === 'h3' ? 7 : stage.key === 'k2' ? st.set.per + 1 : st.set.per;
+    const per = st.set.per;
     const have = new Set(Object.keys(st.items)), lesson = [];
     const before = ALLW.filter(w => w.t.every(id => have.has(id)));
     while (lesson.length < per && rem.length) {
@@ -613,7 +613,7 @@
   function saveSpot() {
     if (!run || !run.daily) return;
     if (run.si >= run.sections.length) st.resume = null;
-    else st.resume = { day: today(), si: run.si, ci: run.ci, lesson: dailyLesson };
+    else st.resume = { v: 2, day: today(), si: run.si, ci: run.ci, lesson: dailyLesson };
     touch();
   }
   function step() {
@@ -666,17 +666,15 @@
     const cs = [];
     if (L.first) { const n = NOTES[L.stage.key]; cs.push({ t: 'note', title: n[0], html: n[1] }); }
     if (L.items.includes('を')) cs.push({ t: 'note', title: NOTES.wo[0], html: NOTES.wo[1] });
-    L.items.forEach(id => { cs.push({ t: 'intro', id }); if (single(id)) cs.push({ t: 'write', id, phases: ['watch', 'trace', 'memory'] }); });
+    L.items.forEach(id => { cs.push({ t: 'intro', id }); if (single(id)) cs.push({ t: 'write', id, phases: ['trace', 'memory'] }); });
     shuffle(L.items).forEach(id => cs.push({ t: 'pick', id }));
-    shuffle(L.items).filter(single).forEach(id => cs.push({ t: 'write', id, phases: ['memory'] }));
-    L.unlocked.slice(0, 6).forEach(w => cs.push({ t: 'readWord', w }));
+    L.unlocked.slice(0, 3).forEach(w => cs.push({ t: 'readWord', w }));
     return cs;
   }
   function dueItems() { const t = today(); return Object.keys(st.items).filter(id => st.items[id].d <= t && st.items[id].n > 0 || (st.items[id].b === 0 && st.items[id].d < t)).sort((a, b) => st.items[a].d - st.items[b].d); }
   function reviewCards() {
     const t = today(), cs = [];
-    dueItems().slice(0, 22).forEach((id, i) => cs.push(i % 4 === 3 && single(id) ? { t: 'write', id, phases: ['memory'], grade: true } : i % 2 ? { t: 'recall', id } : { t: 'pick', id }));
-    Object.keys(st.w).filter(k => st.w[k].d <= t && st.w[k].n > 0 && BYK[k]).slice(0, 8).forEach((k, i) => cs.push(readable(BYK[k]) && i % 2 ? { t: 'meaning', w: BYK[k] } : { t: 'meaning', w: BYK[k], hear: true }));
+    dueItems().slice(0, 6).forEach((id, i) => cs.push(i % 2 ? { t: 'recall', id } : { t: 'pick', id }));
     return shuffle(cs);
   }
   function readCards(n) {
@@ -706,12 +704,7 @@
     if (!extraLesson) dailyLesson = L ? packLesson(L) : null;
     if (!extraLesson) secs.push({ name: 'مراجعة', build: reviewCards });
     if (L) secs.push({ name: 'حروف جديدة', build: () => lessonCards(L), onDone: () => { st.lessons++; st.lessonDay = today(); st.pend = null; touch(); } });
-    if (!extraLesson) {
-      secs.push({ name: 'قراءة', build: () => readCards(6) });
-      secs.push({ name: 'كلمات', build: () => vocabCards(4) });
-      secs.push({ name: 'كلام', build: () => speakCards(true), onDone: () => { st.shadow += 3; st.chunk++; touch(); } });
-    }
-    return secs;
+    return secs.filter(x => x.name !== 'مراجعة' || dueItems().length);
   }
 
   /* ================= الصفحة الرئيسية ================= */
@@ -722,12 +715,10 @@
     $('#kk-date').textContent = new Date().toLocaleDateString('ar-IQ-u-nu-latn', { weekday: 'long', day: 'numeric', month: 'long' });
     const due = dueItems().length, plan = $('#plan'); plan.innerHTML = '';
     const li = (n, label, em, jp) => { const e = h('li', { class: doneToday ? 'done' : '' }, h('i', { lang: 'ja', text: n }), h('span', { text: label }), em ? h('em', jp ? { lang: 'ja', text: em } : { text: em }) : null); plan.appendChild(e); };
-    li('一', 'مراجعة', due ? due + ' حرفاً' : 'لا شيء اليوم');
-    if (L) li('二', 'حروف جديدة', L.items.join(' '), true); else li('二', 'حروف جديدة', nextLesson() ? 'أُنجز درس اليوم' : 'أتممت كل الحروف');
-    li('三', 'قراءة', 'كلمات وجمل بحروفك');
-    li('四', 'كلمات جديدة', '4 كلمات');
-    li('五', 'كلام', 'ترديد وعبارات');
-    $('#start').textContent = st.resume && st.resume.day === t ? 'أكمل من حيث توقفت' : doneToday ? 'جلسة أخرى' : 'ابدأ الجلسة';
+    if (L) li('一', L.items.length + ' حروف جديدة', L.items.join(' '), true); else li('一', 'حروف اليوم', nextLesson() ? 'أُنجزت، أحسنت' : 'أتممت كل الحروف');
+    li('二', 'مراجعة سريعة', due ? Math.min(6, due) + ' حروف' : 'لا شيء اليوم');
+    $('#start').disabled = false;
+    $('#start').textContent = st.resume && st.resume.v === 2 && st.resume.day === t ? 'أكمل من حيث توقفت' : doneToday ? 'جلسة أخرى' : 'ابدأ الجلسة';
     $('#extra').hidden = !(st.lessonDay === t && nextLesson());
     const sg = $('#stamps'); sg.innerHTML = '';
     const now = new Date(t * 864e5), y = now.getUTCFullYear(), mo = now.getUTCMonth();
@@ -867,8 +858,10 @@
     try { if (Garden.init && Garden.init($('#garden'), { hira: ORDER.h, kata: ORDER.k })) { Garden.onPick = p => { if (tab === 'garden') showPick(p); }; } } catch (e) { console.error(e); }
     showScreen('home'); syncTree(true);
     $('#start').addEventListener('click', () => {
-      Sfx.bell(); const r = st.resume && st.resume.day === today() ? st.resume : null;
-      startRun(r ? daily(false, r.lesson ? unpackLesson(r.lesson) : null) : daily(false), 'جلسة اليوم', true, r);
+      Sfx.bell(); const r = st.resume && st.resume.v === 2 && st.resume.day === today() ? st.resume : null;
+      const secs = r ? daily(false, r.lesson ? unpackLesson(r.lesson) : null) : daily(false);
+      if (!secs.length) return toast('أنهيت حروف اليوم. للمزيد اضغط «درس جديد إضافي» أو افتح «تدريب».');
+      startRun(secs, 'جلسة اليوم', true, r);
     });
     $('#back').addEventListener('click', goBack);
     $('#extra').addEventListener('click', () => { const s = daily(true); if (s.length) startRun(s, 'درس إضافي', false); });
